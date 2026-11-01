@@ -396,4 +396,6 @@ if (scheduletime != ""):
         thisTime(hour,minute) # 倒计时
 else:
     job()
-    input("手动签到已结束，敲击回车关闭窗口☆~")
+    # GitHub Actions 环境无标准输入，跳过交互式等待
+    if os.environ.get('GITHUB_ACTIONS') != 'true':
+        input("手动签到已结束，敲击回车关闭窗口☆~")
