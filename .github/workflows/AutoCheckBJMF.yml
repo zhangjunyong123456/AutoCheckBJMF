@@ -1,6 +1,11 @@
 name: AutoCheckBJMF
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '30 13 * * *'   # 北京时间 21:30
+    - cron: '45 13 * * *'   # 北京时间 21:45
+    - cron: '0 14 * * *'    # 北京时间 22:00
+    - cron: '15 14 * * *'   # 北京时间 22:15
 env:
     ClassID: ${{ secrets.ClassID }}
     X: ${{ secrets.X }}
