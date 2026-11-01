@@ -1,7 +1,7 @@
 name: AutoCheckBJMF
 on:
-  workflow_dispatch: 
-env: 
+  workflow_dispatch:
+env:
     ClassID: ${{ secrets.ClassID }}
     X: ${{ secrets.X }}
     Y: ${{ secrets.Y }}
@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3        
+        uses: actions/checkout@v3
       - name: Set up env
-        run: pip install requests
-             pip install beautifulsoup4
-       # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi 
+        run: |
+          pip install requests
+          pip install beautifulsoup4
       - name: Checkin
         run: |
-          python main.py 
+          python main.py
