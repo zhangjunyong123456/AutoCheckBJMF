@@ -291,15 +291,54 @@ def qiandao(theCookies):
                 print("★☆★")
 
             if title_tag and "出错" not in title_tag.text:
-                # 使用正则表达式从 HTML 文本中提取所有 punch_gps() 中的数字
+                # 新版页面：任务ID藏在跳转链接中，如 href="/student/punchw/course/107939/5838801?sid=3257432"
+                punch_links = re.findall(r'href="(/student/punchw/course/\d+/\d+[^"]*)"', response.text)
+                punch_links = list(dict.fromkeys(punch_links))  # 去重且保持顺序
+                print("找到签到任务链接:", punch_links)
+                # 旧版页面兼容：punch_gps()/punchcard_()
                 pattern = re.compile(r'punch_gps\((\d+)\)')
                 matches = pattern.findall(response.text)
-                print("找到GPS定位签到:", matches)
                 pattern2 = re.compile(r'punchcard_(\d+)')
                 matches2 = pattern2.findall(response.text)
+                print("找到GPS定位签到:", matches)
                 print("找到扫码签到:", matches2)
                 matches.extend(matches2)
-                if matches:
+                if punch_links or matches:
+                    # 新版流程：向 punchw 页面提交定位（表单字段：lat/lng/acc/res）
+                    for link in punch_links:
+                        url1 = "http://k8n.cn" + link
+                        newX = modify_decimal_part(X)
+                        newY = modify_decimal_part(Y)
+                        payload = {
+                            'lat': newX,
+                            'lng': newY,
+                            'acc': ACC,  #未知，可能是高度
+                            'res': ''  #拍照签到
+                        }
+
+                        response = requests.post(url1, headers=headers, data=payload)
+                        print("签到请求已发送： 链接[%s] 签到定位[%s,%s] 签到海拔[%s]"%(link, newX, newY, ACC))
+                        printLog("info", "用户UID[%d%s] | 签到请求已发送： 链接[%s] 签到定位[%s,%s] 签到海拔[%s]"%(uid+1, username_string, link, newX, newY, ACC))
+
+                        if response.status_code == 200:
+                            print("请求成功，响应:", response)
+
+                            if "签到成功" in response.text:
+                                print("★签到成功★")
+                                printLog("info", "用户UID[%d%s] | 签到成功"%(uid+1, username_string))
+                                if pushtoken != "":
+                                    push_url = 'http://www.pushplus.plus/send?token=' + pushtoken + '&title=' + "班级魔法自动签到任务" + '&content=' + "签到成功"
+                                    requests.get(push_url)
+                            else:
+                                print("响应中未检测到「签到成功」，可能已签到过、定位超出范围或任务已结束，响应片段：")
+                                print(response.text[:400])
+                                printLog("info", "用户UID[%d%s] | 响应中未检测到「签到成功」，请人工核对"%(uid+1, username_string))
+                        else:
+                            print("请求失败，状态码:", response.status_code)
+                            printLog("error", "用户UID[%d%s] | 请求失败，状态码: %d"%(uid+1, username_string, response.status_code))
+                            print("将本Cookie加入重试队列")
+                            errorCookie.append(onlyCookie)
+                    # 旧版流程兼容
                     for match in matches:
                         url1 = "http://k8n.cn/student/punchs/course/" + ClassID + "/" + match
                         newX = modify_decimal_part(X)
