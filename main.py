@@ -45,8 +45,18 @@ with open(file_path, 'r') as file:
     json_data = json.load(file)
     debug = json_data["debug"]
 
+    # GitHub Actions 自动任务：从环境变量读取配置
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        print("----------GitHub Actions 模式----------")
+        ClassID = os.environ['ClassID']
+        X = os.environ['X']
+        Y = os.environ['Y']
+        ACC = os.environ['ACC']
+        Cookies = [c.strip() for c in os.environ.get('MyCookie', '').splitlines() if c.strip()]
+        scheduletime = ''
+        pushtoken = os.environ.get('token', '')
     # 判断是否首次使用或解除配置锁定
-    if not json_data['configLock']:
+    elif not json_data['configLock']:
         print("----------基础配置(必填)----------")
         print("☆请通过查看教程抓包获取班级ID")
         ClassID = input("请输入班级ID：")
@@ -90,7 +100,7 @@ with open(file_path, 'r') as file:
         # 3. 写回JSON文件
         with open(file_path, "w") as file:
             json.dump(json_data, file, indent=4) # indent 设置缩进为4个空格
-        print("数据已保存到"+current_directory+"下的data.json中。")
+        print("数据已保存到"+current_directory+"下的config.json中。")
     else:
         print("----------欢迎回来----------")
         ClassID = json_data["class"]
@@ -143,27 +153,9 @@ if debug:
     printLog("info", "已启动Debug")
 print("★一切就绪，程序开始执行\\^o^/")
 
-### 请注意，下述两个自动任务功能未适配
-# GitHub Actions自动任务
-# ClassID = os.environ['ClassID']
-# X = os.environ['X']
-# Y = os.environ['Y']
-# ACC = os.environ['ACC']
-# SearchTime = os.environ['SearchTime']
-# Cookies = os.environ['Cookies']
-# token = os.environ['token']
-#scheduletime = os.environ['scheduletime']
-
-# 本地面板运行
-#ClassID = ''
-#X = ''
-#Y = ''
-#ACC = ''
-#SearchTime = 60
-#Cookies = ''
-#token = ''  #在pushplus网站中可以找到
-#scheduletime =''
-### 请注意，上述两个自动任务功能未适配
+# GitHub Actions 自动任务已适配：在仓库 Secrets 中配置
+# ClassID、X、Y、ACC、MYCOOKIE（多个 Cookie 用换行分隔）、TOKEN（可选）
+# 然后在 Actions 页面手动触发 AutoCheckBJMF workflow 即可
 
 # 随机经纬，用于多人签到定位偏移
 def modify_decimal_part(num):
@@ -375,11 +367,11 @@ def job():
     if len(errorCookie)>0:
         print("检测到有Cookie签到失败，等待5分钟后启动一次重试队列")
         time.sleep(300)
-        errorCookie = qiandao(errorCookie)
+        errorCookie, _ = qiandao(errorCookie)
         if len(errorCookie)>0:
             print("检测到仍然有Cookie签到失败，等待15分钟后最后启动一次重试队列")
             time.sleep(900)
-            errorCookie = qiandao(errorCookie)
+            errorCookie, _ = qiandao(errorCookie)
             if len(errorCookie)>0:
                 print("!!!  检测到仍然有Cookie签到失败，请检查Cookie是否过期或网络异常  !!!")
     elif nullCookie>0:
